@@ -27,6 +27,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
+        
+      - name: Version
+        run: echo "::set-output name=test::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
+        id: step1       
           
       # Buld jar file 
       - name: Have GitHub Actions Build Maven Project
@@ -38,10 +42,6 @@ jobs:
           git push
           ls -artl target
           mkdir staging && cp target/my-app*.jar staging
-        
-      - name: Version
-        run: echo "::set-output name=test::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
-        id: step1
 
           
       # Upload artifact     
