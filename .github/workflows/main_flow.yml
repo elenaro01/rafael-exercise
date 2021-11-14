@@ -1,3 +1,6 @@
+# Main Flow creates jar artifact and uses it to create the docker image.
+# Flow uploads it into the DockerHub and runs the docker image. 
+
 name: Create Main Flow 
 
 on:
@@ -8,12 +11,13 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    outputs:
+        output1: ${{ steps.step1.outputs.test }}
     strategy:
       fail-fast: true
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout main branch from GitHub 
         uses: actions/checkout@v2
@@ -28,8 +32,16 @@ jobs:
       - name: Have GitHub Actions Build Maven Project
         run: |
           git config --global user.name elenaro01
+          cat pom.xml
           mvn -B release:prepare package --file pom.xml
+          cat pom.xml
+          git push
+          ls -artl target
           mkdir staging && cp target/my-app*.jar staging
+        
+      - name: Version
+        run: echo "::set-output name=test::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)"
+        id: step1
 
           
       # Upload artifact     
@@ -38,3 +50,31 @@ jobs:
         with:
           name: artifact
           path: staging
+          
+      #  Build and Push Docker Image
+      - name: Build and Push Docker Image
+        uses: mr-smithers-excellent/docker-build-push@v4
+        with:
+          image: elenaru01/rafael
+          registry: docker.io
+          tag: ${{ steps.step1.outputs.test }} 
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+    # Download and run the docker image
+  run:
+    # The type of runner that the job will run on
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+        output2: ${{ steps.step2.outputs.test }}
+        
+    steps:
+        - name: Image 
+          run: echo "::set-output name=test::${{ needs.build.outputs.output1 }} "
+          id: step2
+          
+        - name: Docker Run
+          run: |
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} 
+            docker run elenaru01/rafael:${{ steps.step2.outputs.test }}
