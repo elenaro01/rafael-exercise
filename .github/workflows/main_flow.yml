@@ -1,0 +1,40 @@
+name: Create Main Flow 
+
+on:
+  push:
+    branches: [ main ]
+jobs:
+
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout main branch from GitHub 
+        uses: actions/checkout@v2
+
+      # Runs a single command using the runners shell
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          
+      # Buld jar file 
+      - name: Have GitHub Actions Build Maven Project
+        run: |
+          git config --global user.name elenaro01
+          mvn -B release:prepare package --file pom.xml
+          mkdir staging && cp target/my-app*.jar staging
+
+          
+      # Upload artifact     
+      - name: Persist workflow data as artificats
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifact
+          path: staging
