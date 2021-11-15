@@ -52,29 +52,3 @@ jobs:
           path: staging
           
       #  Build and Push Docker Image
-      - name: Build and Push Docker Image
-        uses: mr-smithers-excellent/docker-build-push@v4
-        with:
-          image: elenaru01/rafael
-          registry: docker.io
-          tag: ${{ steps.step1.outputs.test }} 
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          
-    # Download and run the docker image
-  run:
-    # The type of runner that the job will run on
-    needs: build
-    runs-on: ubuntu-latest
-    outputs:
-        output2: ${{ steps.step2.outputs.test }}
-        
-    steps:
-        - name: Image 
-          run: echo "::set-output name=test::${{ needs.build.outputs.output1 }} "
-          id: step2
-          
-        - name: Docker Run
-          run: |
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} 
-            docker run elenaru01/rafael:${{ steps.step2.outputs.test }}
